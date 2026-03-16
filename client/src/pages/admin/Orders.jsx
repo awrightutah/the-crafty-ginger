@@ -24,7 +24,7 @@ function Orders() {
       .from('admin_users')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (!data) {
       navigate('/');

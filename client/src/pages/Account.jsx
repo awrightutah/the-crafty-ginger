@@ -122,13 +122,15 @@ function Account({ user }) {
         .from('admin_users')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       
-      if (data && !error) {
+      if (data) {
         setIsAdmin(true);
+      } else {
+        setIsAdmin(false);
       }
     } catch (error) {
-      // Not an admin, that's fine
+      console.error('Error checking admin status:', error);
       setIsAdmin(false);
     }
   }

@@ -130,7 +130,7 @@ function NewOrder() {
           customer_phone: customerPhone
         })
         .select()
-        .single();
+        .maybeSingle();
 
       if (orderError) throw orderError;
 
