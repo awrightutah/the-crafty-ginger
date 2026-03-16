@@ -118,16 +118,21 @@ function Account({ user }) {
 
   async function checkAdmin() {
     try {
+      console.log('Checking admin status for user:', user?.id);
       const { data, error } = await supabase
         .from('admin_users')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();
       
+      console.log('Admin check result:', { data, error });
+      
       if (data) {
         setIsAdmin(true);
+        console.log('User is admin!');
       } else {
         setIsAdmin(false);
+        console.log('User is not admin');
       }
     } catch (error) {
       console.error('Error checking admin status:', error);
