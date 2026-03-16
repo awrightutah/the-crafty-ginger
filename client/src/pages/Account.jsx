@@ -6,6 +6,7 @@ function Account({ user }) {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,6 +16,7 @@ function Account({ user }) {
     }
     fetchProfile();
     fetchOrders();
+    checkAdmin();
   }, [user]);
 
   async function fetchProfile() {
@@ -49,6 +51,23 @@ function Account({ user }) {
     }
   }
 
+  async function checkAdmin() {
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (data && !error) {
+        setIsAdmin(true);
+      }
+    } catch (error) {
+      // Not an admin, that's fine
+      setIsAdmin(false);
+    }
+  }
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate('/');
@@ -77,6 +96,36 @@ function Account({ user }) {
           <h1>My Account</h1>
           <button onClick={handleLogout} className="btn btn-secondary">Logout</button>
         </div>
+
+        {/* Admin Section - Only visible to admins */}
+        {isAdmin && (
+          <div className="admin-section">
+            <h2>Admin Tools</h2>
+            <div className="admin-cards">
+              <Link to="/admin" className="admin-card">
+                <span className="admin-icon">📊</span>
+                <div className="admin-card-content">
+                  <h3>Admin Dashboard</h3>
+                  <p>View sales stats and manage your store</p>
+                </div>
+              </Link>
+              <Link to="/admin/products" className="admin-card">
+                <span className="admin-icon">🎨</span>
+                <div className="admin-card-content">
+                  <h3>Manage Products</h3>
+                  <p>Add, edit, or remove products</p>
+                </div>
+              </Link>
+              <Link to="/admin/orders" className="admin-card">
+                <span className="admin-icon">📦</span>
+                <div className="admin-card-content">
+                  <h3>Manage Orders</h3>
+                  <p>View and update order statuses</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="account-content">
           <div className="profile-section">
@@ -140,6 +189,55 @@ function Account({ user }) {
         
         .account-header h1 {
           color: var(--color-primary);
+        }
+        
+        .admin-section {
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+          padding: 1.5rem;
+          border-radius: var(--radius-lg);
+          margin-bottom: 2rem;
+        }
+        
+        .admin-section h2 {
+          color: white;
+          margin-bottom: 1rem;
+          font-size: 1.25rem;
+        }
+        
+        .admin-cards {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+        }
+        
+        .admin-card {
+          background: white;
+          padding: 1.25rem;
+          border-radius: var(--radius-md);
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .admin-card:hover {
+          transform: translateY(-2px);
+          box-shadow: var(--shadow-md);
+        }
+        
+        .admin-icon {
+          font-size: 2rem;
+        }
+        
+        .admin-card-content h3 {
+          font-size: 1rem;
+          color: var(--color-primary);
+          margin-bottom: 0.25rem;
+        }
+        
+        .admin-card-content p {
+          font-size: 0.85rem;
+          color: var(--color-text-light);
         }
         
         .account-content {
@@ -222,6 +320,12 @@ function Account({ user }) {
           font-size: 0.9rem;
           color: var(--color-text-light);
           margin-top: 0.5rem;
+        }
+        
+        @media (max-width: 768px) {
+          .admin-cards {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </div>

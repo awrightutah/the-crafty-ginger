@@ -28,9 +28,15 @@ function Dashboard({ user }) {
         .from('admin_users')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      if (error) {
+        console.error('Admin check error:', error);
+        navigate('/');
+        return;
+      }
+
+      if (!data) {
         navigate('/');
         return;
       }
@@ -38,6 +44,7 @@ function Dashboard({ user }) {
       setIsAdmin(true);
       fetchStats();
     } catch (error) {
+      console.error('Error checking admin:', error);
       navigate('/');
     } finally {
       setLoading(false);
@@ -70,7 +77,7 @@ function Dashboard({ user }) {
   }
 
   if (!isAdmin) {
-    return null;
+    return <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>Access Denied</div>;
   }
 
   return (
