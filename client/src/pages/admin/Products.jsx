@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 function Products() {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
@@ -55,6 +57,43 @@ function Products() {
       console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      // Create a unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { error: uploadError } = await supabase.storage
+        .from('product-images')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get the public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('product-images')
+        .getPublicUrl(filePath);
+
+      // Update form data with the image URL
+      setFormData({ ...formData, image_url: publicUrl });
+      alert('Image uploaded successfully!');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image: ' + error.message);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -195,14 +234,38 @@ function Products() {
               </div>
               
               <div className="form-group">
-                <label className="form-label">Image URL</label>
-                <input
-                  type="url"
-                  className="form-input"
-                  value={formData.image_url}
-                  onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                  placeholder="https://..."
-                />
+                <label className="form-label">Product Image</label>
+                <div className="image-upload-section">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleImageUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <button 
+                    type="button"
+                    className="btn btn-secondary upload-btn"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                  >
+                    {uploading ? 'Uploading...' : '📷 Upload Image from Phone'}
+                  </button>
+                  <span className="or-divider">OR</span>
+                  <input
+                    type="url"
+                    className="form-input image-url-input"
+                    placeholder="Paste image URL (e.g., https://...)"
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                  />
+                </div>
+                {formData.image_url && (
+                  <div className="image-preview">
+                    <img src={formData.image_url} alt="Preview" />
+                    <p className="image-url-display">{formData.image_url}</p>
+                  </div>
+                )}
               </div>
               
               <div className="form-group checkbox">
@@ -212,7 +275,7 @@ function Products() {
                     checked={formData.is_custom}
                     onChange={(e) => setFormData({ ...formData, is_custom: e.target.checked })}
                   />
-                  This is a custom order product
+                  This is a custom order product (allows color/notes input)
                 </label>
               </div>
               
@@ -319,6 +382,50 @@ function Products() {
           display: grid;
           grid-template-columns: 2fr 1fr;
           gap: 1rem;
+        }
+        
+        .image-upload-section {
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+        
+        .upload-btn {
+          width: 100%;
+          padding: 1rem;
+          font-size: 1rem;
+        }
+        
+        .or-divider {
+          text-align: center;
+          color: var(--color-text-light);
+          font-size: 0.9rem;
+        }
+        
+        .image-url-input {
+          width: 100%;
+        }
+        
+        .image-preview {
+          margin-top: 1rem;
+          padding: 1rem;
+          background: var(--color-cream);
+          border-radius: var(--radius-md);
+          text-align: center;
+        }
+        
+        .image-preview img {
+          max-width: 200px;
+          max-height: 200px;
+          border-radius: var(--radius-md);
+          box-shadow: var(--shadow-sm);
+        }
+        
+        .image-url-display {
+          font-size: 0.75rem;
+          color: var(--color-text-light);
+          margin-top: 0.5rem;
+          word-break: break-all;
         }
         
         .checkbox label {
