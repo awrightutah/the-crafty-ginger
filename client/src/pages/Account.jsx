@@ -8,6 +8,12 @@ function Account({ user }) {
   const [orders, setOrders] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -29,10 +35,69 @@ function Account({ user }) {
       
       if (error) throw error;
       setProfile(data);
+      // Initialize edit fields
+      setEditName(data?.full_name || user?.user_metadata?.full_name || '');
+      setEditPhone(data?.phone || '');
+      setEditAddress(data?.address || '');
     } catch (error) {
       console.error('Error fetching profile:', error);
+      // Initialize with user metadata if profile doesn't exist
+      setEditName(user?.user_metadata?.full_name || '');
     }
   }
+
+  const startEditing = () => {
+    setEditName(profile?.full_name || user?.user_metadata?.full_name || '');
+    setEditPhone(profile?.phone || '');
+    setEditAddress(profile?.address || '');
+    setEditing(true);
+    setMessage('');
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setMessage('');
+  };
+
+  const saveProfile = async () => {
+    setSaving(true);
+    setMessage('');
+
+    try {
+      // Update profiles table
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          full_name: editName,
+          email: user.email,
+          phone: editPhone,
+          address: editAddress,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      // Update local state
+      setProfile({
+        ...profile,
+        full_name: editName,
+        phone: editPhone,
+        address: editAddress
+      });
+
+      setEditing(false);
+      setMessage('Profile updated successfully!');
+      
+      // Clear message after 3 seconds
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      setMessage('Error saving profile. Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   async function fetchOrders() {
     try {
@@ -138,8 +203,78 @@ function Account({ user }) {
           <div className="profile-section">
             <h2>Profile Information</h2>
             <div className="profile-card">
-              <p><strong>Name:</strong> {profile?.full_name || user?.user_metadata?.full_name || 'Not set'}</p>
-              <p><strong>Email:</strong> {profile?.email || user?.email}</p>
+              {editing ? (
+                <div className="edit-form">
+                  <div className="edit-field">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      placeholder="Enter your name"
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>Email</label>
+                    <input
+                      type="email"
+                      value={user?.email || ''}
+                      disabled
+                      className="disabled-input"
+                    />
+                    <small>Email cannot be changed</small>
+                  </div>
+                  <div className="edit-field">
+                    <label>Phone</label>
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      placeholder="Enter your phone number"
+                    />
+                  </div>
+                  <div className="edit-field">
+                    <label>Address</label>
+                    <textarea
+                      value={editAddress}
+                      onChange={(e) => setEditAddress(e.target.value)}
+                      placeholder="Enter your shipping address"
+                      rows={3}
+                    />
+                  </div>
+                  <div className="edit-actions">
+                    <button 
+                      onClick={saveProfile} 
+                      className="btn btn-primary"
+                      disabled={saving}
+                    >
+                      {saving ? 'Saving...' : 'Save Changes'}
+                    </button>
+                    <button 
+                      onClick={cancelEditing} 
+                      className="btn btn-secondary"
+                      disabled={saving}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p><strong>Name:</strong> {profile?.full_name || user?.user_metadata?.full_name || 'Not set'}</p>
+                  <p><strong>Email:</strong> {profile?.email || user?.email}</p>
+                  <p><strong>Phone:</strong> {profile?.phone || 'Not set'}</p>
+                  <p><strong>Address:</strong> {profile?.address || 'Not set'}</p>
+                  <button onClick={startEditing} className="btn btn-secondary edit-btn">
+                    Edit Profile
+                  </button>
+                </>
+              )}
+              {message && (
+                <p className={`message ${message.includes('Error') ? 'error' : 'success'}`}>
+                  {message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -267,6 +402,81 @@ function Account({ user }) {
         
         .profile-card p {
           margin-bottom: 0.5rem;
+        }
+        
+        .edit-btn {
+          margin-top: 1rem;
+        }
+        
+        .edit-form {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+        }
+        
+        .edit-field {
+          display: flex;
+          flex-direction: column;
+          gap: 0.25rem;
+        }
+        
+        .edit-field label {
+          font-weight: 600;
+          color: var(--color-text);
+          font-size: 0.9rem;
+        }
+        
+        .edit-field input,
+        .edit-field textarea {
+          padding: 0.75rem;
+          border: 2px solid var(--color-cream-dark);
+          border-radius: var(--radius-md);
+          font-size: 1rem;
+          font-family: inherit;
+        }
+        
+        .edit-field input:focus,
+        .edit-field textarea:focus {
+          outline: none;
+          border-color: var(--color-primary);
+        }
+        
+        .edit-field small {
+          color: var(--color-text-light);
+          font-size: 0.8rem;
+        }
+        
+        .disabled-input {
+          background-color: var(--color-cream);
+          cursor: not-allowed;
+        }
+        
+        .edit-actions {
+          display: flex;
+          gap: 1rem;
+          margin-top: 0.5rem;
+        }
+        
+        .edit-actions .btn {
+          flex: 1;
+        }
+        
+        .message {
+          margin-top: 1rem;
+          padding: 0.75rem;
+          border-radius: var(--radius-md);
+          text-align: center;
+          font-weight: 500;
+        }
+        
+        .message.success {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+        
+        .message.error {
+          background-color: #fee2e2;
+          color: #991b1b;
         }
         
         .no-orders {
