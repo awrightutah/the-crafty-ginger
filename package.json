@@ -4,14 +4,11 @@
   "private": true,
   "description": "The Crafty Ginger PWA - Handmade Resin Creations",
   "scripts": {
-    "dev": "concurrently &quot;npm run dev:server&quot; &quot;npm run dev:client&quot;",
-    "dev:client": "cd client && npm run dev",
-    "dev:server": "cd server && npm run dev",
-    "build": "cd client && npm run build",
+    "build": "cd client && npm install && npm run build",
     "start": "cd server && npm start",
-    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+    "postinstall": "cd client && npm install && cd ../server && npm install"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
