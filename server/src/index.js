@@ -2,8 +2,13 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -150,7 +155,6 @@ app.post('/api/orders', async (req, res) => {
 // Admin endpoints - Products CRUD
 app.post('/api/admin/products', async (req, res) => {
   try {
-    // Check admin auth
     const authHeader = req.headers.authorization;
     if (!authHeader) return res.status(401).json({ error: 'Unauthorized' });
     
@@ -158,7 +162,6 @@ app.post('/api/admin/products', async (req, res) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) return res.status(401).json({ error: 'Unauthorized' });
     
-    // Check if user is admin
     const { data: adminUser } = await supabase
       .from('admin_users')
       .select('*')
@@ -314,6 +317,14 @@ app.put('/api/admin/orders/:id', async (req, res) => {
   }
 });
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, '../../client/dist')));
+
+// Catch all handler: send back React's index.html file for any non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../../client/dist/index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 The Crafty Ginger API running on port ${PORT}`);
+  console.log(`🚀 The Crafty Ginger running on port ${PORT}`);
 });
