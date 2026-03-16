@@ -44,6 +44,12 @@ CREATE TABLE orders (
   status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'confirmed', 'in_progress', 'shipped', 'delivered', 'cancelled')),
   notes TEXT,
   venmo_username TEXT,
+  order_type TEXT DEFAULT 'online' CHECK (order_type IN ('online', 'in_person', 'phone', 'custom')),
+  payment_method TEXT DEFAULT 'venmo' CHECK (payment_method IN ('venmo', 'cash', 'other')),
+  payment_status TEXT DEFAULT 'pending' CHECK (payment_status IN ('pending', 'paid', 'refunded')),
+  customer_name TEXT,
+  customer_email TEXT,
+  customer_phone TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

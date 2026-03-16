@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 
 function Orders() {
@@ -7,6 +7,7 @@ function Orders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [paymentFilter, setPaymentFilter] = useState('all');
 
   useEffect(() => {
     checkAdmin();
@@ -75,9 +76,44 @@ function Orders() {
     return colors[status] || '#6B7280';
   };
 
-  const filteredOrders = filter === 'all' 
-    ? orders 
-    : orders.filter(o => o.status === filter);
+  const filteredOrders = orders.filter(o => {
+      const statusMatch = filter === 'all' || o.status === filter;
+      const paymentMatch = paymentFilter === 'all' || o.payment_status === paymentFilter;
+      return statusMatch && paymentMatch;
+    });
+
+  const getPaymentStatusColor = (status) => {
+    const colors = {
+      paid: '#10B981',
+      pending: '#F59E0B',
+      refunded: '#EF4444'
+    };
+    return colors[status] || '#6B7280';
+  };
+
+  const getOrderTypeIcon = (type) => {
+    const icons = {
+      online: '🌐',
+      in_person: '🏪',
+      phone: '📞',
+      custom: '✨'
+    };
+    return icons[type] || '📦';
+  };
+
+  const updatePaymentStatus = async (orderId, newStatus) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ payment_status: newStatus })
+        .eq('id', orderId);
+      
+      if (error) throw error;
+      fetchOrders();
+    } catch (error) {
+      alert('Error updating payment status: ' + error.message);
+    }
+  };
 
   if (loading) {
     return <div className="container" style={{ padding: '4rem', textAlign: 'center' }}>Loading...</div>;
@@ -86,33 +122,62 @@ function Orders() {
   return (
     <div className="admin-orders">
       <div className="container">
-        <h1>Manage Orders</h1>
+        <div className="page-header">
+          <h1>Manage Orders</h1>
+          <Link to="/admin/orders/new" className="btn btn-primary">
+            + New Order
+          </Link>
+        </div>
 
         <div className="filter-bar">
-          <button 
-            className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-            onClick={() => setFilter('all')}
-          >
-            All ({orders.length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'pending' ? 'active' : ''}`}
-            onClick={() => setFilter('pending')}
-          >
-            Pending ({orders.filter(o => o.status === 'pending').length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'confirmed' ? 'active' : ''}`}
-            onClick={() => setFilter('confirmed')}
-          >
-            Confirmed ({orders.filter(o => o.status === 'confirmed').length})
-          </button>
-          <button 
-            className={`filter-btn ${filter === 'shipped' ? 'active' : ''}`}
-            onClick={() => setFilter('shipped')}
-          >
-            Shipped ({orders.filter(o => o.status === 'shipped').length})
-          </button>
+          <div className="filter-group">
+            <label>Status:</label>
+            <button 
+              className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+              onClick={() => setFilter('all')}
+            >
+              All ({orders.length})
+            </button>
+            <button 
+              className={`filter-btn ${filter === 'pending' ? 'active' : ''}`}
+              onClick={() => setFilter('pending')}
+            >
+              Pending ({orders.filter(o => o.status === 'pending').length})
+            </button>
+            <button 
+              className={`filter-btn ${filter === 'confirmed' ? 'active' : ''}`}
+              onClick={() => setFilter('confirmed')}
+            >
+              Confirmed ({orders.filter(o => o.status === 'confirmed').length})
+            </button>
+            <button 
+              className={`filter-btn ${filter === 'shipped' ? 'active' : ''}`}
+              onClick={() => setFilter('shipped')}
+            >
+              Shipped ({orders.filter(o => o.status === 'shipped').length})
+            </button>
+          </div>
+          <div className="filter-group">
+            <label>Payment:</label>
+            <button 
+              className={`filter-btn payment ${paymentFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setPaymentFilter('all')}
+            >
+              All
+            </button>
+            <button 
+              className={`filter-btn payment paid ${paymentFilter === 'paid' ? 'active' : ''}`}
+              onClick={() => setPaymentFilter('paid')}
+            >
+              Paid ({orders.filter(o => o.payment_status === 'paid').length})
+            </button>
+            <button 
+              className={`filter-btn payment pending ${paymentFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setPaymentFilter('pending')}
+            >
+              Unpaid ({orders.filter(o => o.payment_status === 'pending').length})
+            </button>
+          </div>
         </div>
 
         <div className="orders-list">
@@ -125,24 +190,42 @@ function Orders() {
               <div key={order.id} className="order-card">
                 <div className="order-header">
                   <div className="order-info">
-                    <span className="order-id">Order #{order.id.slice(0, 8)}</span>
+                    <span className="order-id">
+                      {getOrderTypeIcon(order.order_type)} Order #{order.id.slice(0, 8)}
+                    </span>
                     <span className="order-date">
                       {new Date(order.created_at).toLocaleDateString()} at{' '}
                       {new Date(order.created_at).toLocaleTimeString()}
                     </span>
                   </div>
-                  <span 
-                    className="order-status"
-                    style={{ backgroundColor: getStatusColor(order.status) }}
-                  >
-                    {order.status.replace('_', ' ')}
-                  </span>
+                  <div className="order-badges">
+                    <span 
+                      className="order-status"
+                      style={{ backgroundColor: getStatusColor(order.status) }}
+                    >
+                      {order.status.replace('_', ' ')}
+                    </span>
+                    <span 
+                      className="payment-status"
+                      style={{ backgroundColor: getPaymentStatusColor(order.payment_status) }}
+                    >
+                      {order.payment_status === 'paid' ? '✓ Paid' : order.payment_status}
+                    </span>
+                  </div>
                 </div>
                 
                 <div className="order-details">
                   <div className="detail-section">
                     <h4>Customer</h4>
-                    <p>User ID: {order.user_id?.slice(0, 8)}...</p>
+                    {order.customer_name ? (
+                      <>
+                        <p><strong>{order.customer_name}</strong></p>
+                        {order.customer_phone && <p>📱 {order.customer_phone}</p>}
+                        {order.customer_email && <p>✉️ {order.customer_email}</p>}
+                      </>
+                    ) : (
+                      <p>Online Customer</p>
+                    )}
                     {order.venmo_username && (
                       <p><strong>Venmo:</strong> {order.venmo_username}</p>
                     )}
@@ -151,6 +234,12 @@ function Orders() {
                   <div className="detail-section">
                     <h4>Order Info</h4>
                     <p className="order-total">Total: ${order.total?.toFixed(2)}</p>
+                    {order.payment_method && (
+                      <p>Payment: {order.payment_method === 'venmo' ? '💸 Venmo' : order.payment_method === 'cash' ? '💵 Cash' : order.payment_method}</p>
+                    )}
+                    {order.order_type && order.order_type !== 'online' && (
+                      <p>Type: {order.order_type.replace('_', ' ')}</p>
+                    )}
                     {order.notes && (
                       <p className="order-notes"><strong>Notes:</strong> {order.notes}</p>
                     )}
@@ -158,19 +247,33 @@ function Orders() {
                 </div>
 
                 <div className="order-actions">
-                  <label>Update Status:</label>
-                  <select
-                    value={order.status}
-                    onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                    className="status-select"
-                  >
-                    <option value="pending">Pending</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="in_progress">In Progress</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="cancelled">Cancelled</option>
-                  </select>
+                  <div className="action-group">
+                    <label>Order Status:</label>
+                    <select
+                      value={order.status}
+                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
+                      className="status-select"
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                      <option value="in_progress">In Progress</option>
+                      <option value="shipped">Shipped</option>
+                      <option value="delivered">Delivered</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                  <div className="action-group">
+                    <label>Payment Status:</label>
+                    <select
+                      value={order.payment_status || 'pending'}
+                      onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
+                      className="status-select"
+                    >
+                      <option value="pending">⏳ Pending</option>
+                      <option value="paid">✓ Paid</option>
+                      <option value="refunded">↩ Refunded</option>
+                    </select>
+                  </div>
                 </div>
               </div>
             ))
@@ -188,11 +291,31 @@ function Orders() {
           margin-bottom: 1.5rem;
         }
         
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1.5rem;
+        }
+        
         .filter-bar {
           display: flex;
-          gap: 0.5rem;
+          gap: 2rem;
           margin-bottom: 2rem;
           flex-wrap: wrap;
+        }
+        
+        .filter-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        
+        .filter-group label {
+          font-weight: 600;
+          color: var(--color-text-light);
+          margin-right: 0.5rem;
         }
         
         .filter-btn {
@@ -209,6 +332,28 @@ function Orders() {
         .filter-btn:hover,
         .filter-btn.active {
           background: var(--color-primary);
+          color: white;
+        }
+        
+        .filter-btn.payment.paid {
+          border-color: #10B981;
+          color: #10B981;
+        }
+        
+        .filter-btn.payment.paid.active,
+        .filter-btn.payment.paid:hover {
+          background: #10B981;
+          color: white;
+        }
+        
+        .filter-btn.payment.pending {
+          border-color: #F59E0B;
+          color: #F59E0B;
+        }
+        
+        .filter-btn.payment.pending.active,
+        .filter-btn.payment.pending:hover {
+          background: #F59E0B;
           color: white;
         }
         
@@ -244,7 +389,20 @@ function Orders() {
           margin-left: 1rem;
         }
         
+        .order-badges {
+          display: flex;
+          gap: 0.5rem;
+        }
+        
         .order-status {
+          padding: 0.25rem 0.75rem;
+          border-radius: var(--radius-sm);
+          color: white;
+          font-size: 0.85rem;
+          text-transform: capitalize;
+        }
+        
+        .payment-status {
           padding: 0.25rem 0.75rem;
           border-radius: var(--radius-sm);
           color: white;
@@ -282,10 +440,21 @@ function Orders() {
         
         .order-actions {
           display: flex;
-          align-items: center;
-          gap: 1rem;
+          gap: 2rem;
           padding-top: 1rem;
           border-top: 1px solid var(--color-cream-dark);
+          flex-wrap: wrap;
+        }
+        
+        .action-group {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        
+        .action-group label {
+          font-weight: 500;
+          color: var(--color-text-light);
         }
         
         .status-select {

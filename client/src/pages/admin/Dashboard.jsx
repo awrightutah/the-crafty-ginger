@@ -117,6 +117,10 @@ function Dashboard({ user }) {
         </div>
 
         <div className="admin-actions">
+          <Link to="/admin/orders/new" className="action-card highlight">
+            <h3>📝 New In-Person Order</h3>
+            <p>Create orders for walk-in customers and mark as paid</p>
+          </Link>
           <Link to="/admin/products" className="action-card">
             <h3>📦 Manage Products</h3>
             <p>Add, edit, or remove products from your store</p>
@@ -124,6 +128,10 @@ function Dashboard({ user }) {
           <Link to="/admin/orders" className="action-card">
             <h3>📋 Manage Orders</h3>
             <p>View and update order statuses</p>
+          </Link>
+          <Link to="/admin/calculator" className="action-card">
+            <h3>💰 Cost Calculator</h3>
+            <p>Calculate pricing for resin products</p>
           </Link>
         </div>
       </div>
@@ -188,6 +196,15 @@ function Dashboard({ user }) {
         .action-card:hover {
           transform: translateY(-4px);
           box-shadow: var(--shadow-lg);
+        }
+        
+        .action-card.highlight {
+          background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+        }
+        
+        .action-card.highlight h3,
+        .action-card.highlight p {
+          color: white;
         }
         
         .action-card h3 {
