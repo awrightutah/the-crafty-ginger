@@ -123,6 +123,13 @@ function Account({ user }) {
                   <p>View and update order statuses</p>
                 </div>
               </Link>
+              <Link to="/admin/calculator" className="admin-card">
+                <span className="admin-icon">💰</span>
+                <div className="admin-card-content">
+                  <h3>Cost Calculator</h3>
+                  <p>Calculate pricing for products</p>
+                </div>
+              </Link>
             </div>
           </div>
         )}
@@ -206,7 +213,7 @@ function Account({ user }) {
         
         .admin-cards {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 1rem;
         }
         

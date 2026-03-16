@@ -14,6 +14,7 @@ import Account from './pages/Account';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminProducts from './pages/admin/Products';
 import AdminOrders from './pages/admin/Orders';
+import Calculator from './pages/admin/Calculator';
 import { CartProvider } from './context/CartContext';
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
               <Route path="/admin" element={<AdminDashboard user={user} />} />
               <Route path="/admin/products" element={<AdminProducts user={user} />} />
               <Route path="/admin/orders" element={<AdminOrders user={user} />} />
+              <Route path="/admin/calculator" element={<Calculator user={user} />} />
             </Routes>
           </main>
           <Footer />

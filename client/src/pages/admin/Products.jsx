@@ -249,7 +249,7 @@ function Products() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploading}
                   >
-                    {uploading ? 'Uploading...' : '📷 Upload Image from Phone'}
+                    {uploading ? 'Uploading...' : '📷 Upload Image'}
                   </button>
                   <span className="or-divider">OR</span>
                   <input
