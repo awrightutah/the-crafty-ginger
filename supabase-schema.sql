@@ -50,6 +50,9 @@ CREATE TABLE orders (
   customer_name TEXT,
   customer_email TEXT,
   customer_phone TEXT,
+  sms_consent BOOLEAN DEFAULT FALSE,
+  sms_consent_text TEXT,
+  sms_consent_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

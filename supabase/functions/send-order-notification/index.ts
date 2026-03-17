@@ -14,6 +14,9 @@ interface OrderRecord {
   customer_name: string | null
   customer_email: string | null
   customer_phone: string | null
+  sms_consent: boolean | null
+  sms_consent_text: string | null
+  sms_consent_at: string | null
   created_at: string
 }
 
@@ -75,6 +78,7 @@ serve(async (req) => {
             ${order.customer_email ? `<p><strong>Email:</strong> ${order.customer_email}</p>` : ''}
             ${order.customer_phone ? `<p><strong>Phone:</strong> ${order.customer_phone}</p>` : ''}
             ${order.venmo_username ? `<p><strong>Venmo:</strong> ${order.venmo_username}</p>` : ''}
+            ${order.sms_consent ? `<p><strong>✓ SMS Consent:</strong> Customer agreed to receive text updates</p>` : ''}
           </div>
           
           <div style="background-color: #FFF8F0; padding: 15px; border-radius: 8px; margin: 20px 0;">
@@ -108,7 +112,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         from: 'The Crafty Ginger <onboarding@resend.dev>',
-        to: ['juliewright0209@gmail.com'],
+        to: ['andrewwright0520@gmail.com'],
         subject: `🛒 New Order #${orderIdShort} - $${order.total?.toFixed(2) || '0.00'}`,
         html: emailHtml
       })

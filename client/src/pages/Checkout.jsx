@@ -10,6 +10,8 @@ function Checkout({ user }) {
   
   const [formData, setFormData] = useState({
     venmo_username: '',
+    phone: '',
+    sms_consent: false,
     notes: ''
   });
   const [loading, setLoading] = useState(false);
@@ -71,6 +73,10 @@ function Checkout({ user }) {
           total,
           notes: formData.notes,
           venmo_username: formData.venmo_username,
+          customer_phone: formData.phone,
+          sms_consent: formData.sms_consent,
+          sms_consent_text: 'I consent to receive text message updates about my order at the phone number provided. Message and data rates may apply. Reply STOP to cancel.',
+          sms_consent_at: formData.sms_consent ? new Date().toISOString() : null,
           status: 'pending'
         });
 
@@ -121,6 +127,33 @@ function Checkout({ user }) {
                   onChange={(e) => setFormData({ ...formData, venmo_username: e.target.value })}
                   required
                 />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Phone Number *</label>
+                <input
+                  type="tel"
+                  className="form-input"
+                  placeholder="(555) 123-4567"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  required
+                />
+                <p className="form-hint">Used for order updates and delivery notifications</p>
+              </div>
+
+              <div className="form-group consent-group">
+                <label className="checkbox-label">
+                  <input
+                    type="checkbox"
+                    checked={formData.sms_consent}
+                    onChange={(e) => setFormData({ ...formData, sms_consent: e.target.checked })}
+                    required
+                  />
+                  <span className="consent-text">
+                    I consent to receive text message updates about my order at the phone number provided. Message and data rates may apply. Reply STOP to cancel.
+                  </span>
+                </label>
               </div>
 
               <div className="form-group">
@@ -300,6 +333,40 @@ function Checkout({ user }) {
           width: 100%;
           padding: 1rem;
           font-size: 1.1rem;
+        }
+        
+        .form-hint {
+          font-size: 0.85rem;
+          color: var(--color-text-light);
+          margin-top: 0.25rem;
+        }
+        
+        .consent-group {
+          background: var(--color-cream);
+          padding: 1rem;
+          border-radius: var(--radius-md);
+          border: 1px solid var(--color-cream-dark);
+        }
+        
+        .checkbox-label {
+          display: flex;
+          align-items: flex-start;
+          gap: 0.75rem;
+          cursor: pointer;
+        }
+        
+        .checkbox-label input[type="checkbox"] {
+          width: 20px;
+          height: 20px;
+          margin-top: 2px;
+          flex-shrink: 0;
+          accent-color: var(--color-primary);
+        }
+        
+        .consent-text {
+          font-size: 0.9rem;
+          color: var(--color-text);
+          line-height: 1.5;
         }
         
         @media (max-width: 768px) {
