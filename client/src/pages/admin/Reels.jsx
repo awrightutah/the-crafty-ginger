@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { isAdmin } from '../../lib/admin';
 
-function Reels() {
+function Reels({ user }) {
+  const navigate = useNavigate();
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdminUser, setIsAdminUser] = useState(false);
@@ -19,11 +20,37 @@ function Reels() {
   useEffect(() => {
     checkAdmin();
     fetchReels();
-  }, []);
+  }, [user]);
 
   const checkAdmin = async () => {
-    const admin = await isAdmin();
-    setIsAdminUser(admin);
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('admin_users')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Admin check error:', error);
+        navigate('/');
+        return;
+      }
+
+      if (!data) {
+        navigate('/');
+        return;
+      }
+
+      setIsAdminUser(true);
+    } catch (error) {
+      console.error('Error checking admin:', error);
+      navigate('/');
+    }
   };
 
   const fetchReels = async () => {
