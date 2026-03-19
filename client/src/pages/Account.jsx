@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 function Account({ user }) {
   const navigate = useNavigate();
@@ -256,46 +257,19 @@ function Account({ user }) {
                     />
                   </div>
                   <div className="address-fields">
-                    <div className="edit-field">
-                      <label>Street Address</label>
-                      <input
-                        type="text"
-                        value={editStreetAddress}
-                        onChange={(e) => setEditStreetAddress(e.target.value)}
-                        placeholder="123 Main Street"
-                      />
-                    </div>
-                    <div className="address-row-edit">
-                      <div className="edit-field">
-                        <label>City</label>
-                        <input
-                          type="text"
-                          value={editCity}
-                          onChange={(e) => setEditCity(e.target.value)}
-                          placeholder="Salt Lake City"
-                        />
-                      </div>
-                      <div className="edit-field edit-field-small">
-                        <label>State</label>
-                        <input
-                          type="text"
-                          value={editState}
-                          onChange={(e) => setEditState(e.target.value)}
-                          placeholder="UT"
-                          maxLength="2"
-                        />
-                      </div>
-                      <div className="edit-field edit-field-small">
-                        <label>ZIP Code</label>
-                        <input
-                          type="text"
-                          value={editZipCode}
-                          onChange={(e) => setEditZipCode(e.target.value)}
-                          placeholder="84101"
-                          maxLength="10"
-                        />
-                      </div>
-                    </div>
+                    <AddressAutocomplete
+                      streetAddress={editStreetAddress}
+                      city={editCity}
+                      state={editState}
+                      zipCode={editZipCode}
+                      onAddressChange={(address) => {
+                        setEditStreetAddress(address.street_address);
+                        setEditCity(address.city);
+                        setEditState(address.state);
+                        setEditZipCode(address.zip_code);
+                      }}
+                      apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                    />
                   </div>
                   <div className="edit-actions">
                     <button 

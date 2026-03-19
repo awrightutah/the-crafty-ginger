@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { supabase } from '../lib/supabase';
+import AddressAutocomplete from '../components/AddressAutocomplete';
 
 function Checkout({ user }) {
   const navigate = useNavigate();
@@ -152,58 +153,20 @@ function Checkout({ user }) {
 
               <div className="address-section">
                 <h3 className="section-title">Shipping Address</h3>
-                
-                <div className="form-group">
-                  <label className="form-label">Street Address *</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    placeholder="123 Main Street"
-                    value={formData.street_address}
-                    onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="address-row">
-                  <div className="form-group">
-                    <label className="form-label">City *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="Salt Lake City"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                      required
-                    />
-                  </div>
-
-                  <div className="form-group form-group-small">
-                    <label className="form-label">State *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="UT"
-                      value={formData.state}
-                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                      required
-                      maxLength="2"
-                    />
-                  </div>
-
-                  <div className="form-group form-group-small">
-                    <label className="form-label">ZIP Code *</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      placeholder="84101"
-                      value={formData.zip_code}
-                      onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
-                      required
-                      maxLength="10"
-                    />
-                  </div>
-                </div>
+                <AddressAutocomplete
+                  streetAddress={formData.street_address}
+                  city={formData.city}
+                  state={formData.state}
+                  zipCode={formData.zip_code}
+                  onAddressChange={(address) => setFormData({
+                    ...formData,
+                    street_address: address.street_address,
+                    city: address.city,
+                    state: address.state,
+                    zip_code: address.zip_code
+                  })}
+                  apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}
+                />
               </div>
 
               <div className="form-group consent-group">
