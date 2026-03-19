@@ -12,7 +12,10 @@ function Account({ user }) {
   const [saving, setSaving] = useState(false);
   const [editName, setEditName] = useState('');
   const [editPhone, setEditPhone] = useState('');
-  const [editAddress, setEditAddress] = useState('');
+  const [editStreetAddress, setEditStreetAddress] = useState('');
+  const [editCity, setEditCity] = useState('');
+  const [editState, setEditState] = useState('');
+  const [editZipCode, setEditZipCode] = useState('');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -38,7 +41,10 @@ function Account({ user }) {
       // Initialize edit fields
       setEditName(data?.full_name || user?.user_metadata?.full_name || '');
       setEditPhone(data?.phone || '');
-      setEditAddress(data?.address || '');
+      setEditStreetAddress(data?.street_address || '');
+      setEditCity(data?.city || '');
+      setEditState(data?.state || '');
+      setEditZipCode(data?.zip_code || '');
     } catch (error) {
       console.error('Error fetching profile:', error);
       // Initialize with user metadata if profile doesn't exist
@@ -49,7 +55,10 @@ function Account({ user }) {
   const startEditing = () => {
     setEditName(profile?.full_name || user?.user_metadata?.full_name || '');
     setEditPhone(profile?.phone || '');
-    setEditAddress(profile?.address || '');
+    setEditStreetAddress(profile?.street_address || '');
+    setEditCity(profile?.city || '');
+    setEditState(profile?.state || '');
+    setEditZipCode(profile?.zip_code || '');
     setEditing(true);
     setMessage('');
   };
@@ -72,7 +81,10 @@ function Account({ user }) {
           full_name: editName,
           email: user.email,
           phone: editPhone,
-          address: editAddress,
+          street_address: editStreetAddress,
+          city: editCity,
+          state: editState,
+          zip_code: editZipCode,
           updated_at: new Date().toISOString()
         });
 
@@ -83,7 +95,10 @@ function Account({ user }) {
         ...profile,
         full_name: editName,
         phone: editPhone,
-        address: editAddress
+        street_address: editStreetAddress,
+        city: editCity,
+        state: editState,
+        zip_code: editZipCode
       });
 
       setEditing(false);
@@ -240,14 +255,47 @@ function Account({ user }) {
                       placeholder="Enter your phone number"
                     />
                   </div>
-                  <div className="edit-field">
-                    <label>Address</label>
-                    <textarea
-                      value={editAddress}
-                      onChange={(e) => setEditAddress(e.target.value)}
-                      placeholder="Enter your shipping address"
-                      rows={3}
-                    />
+                  <div className="address-fields">
+                    <div className="edit-field">
+                      <label>Street Address</label>
+                      <input
+                        type="text"
+                        value={editStreetAddress}
+                        onChange={(e) => setEditStreetAddress(e.target.value)}
+                        placeholder="123 Main Street"
+                      />
+                    </div>
+                    <div className="address-row-edit">
+                      <div className="edit-field">
+                        <label>City</label>
+                        <input
+                          type="text"
+                          value={editCity}
+                          onChange={(e) => setEditCity(e.target.value)}
+                          placeholder="Salt Lake City"
+                        />
+                      </div>
+                      <div className="edit-field edit-field-small">
+                        <label>State</label>
+                        <input
+                          type="text"
+                          value={editState}
+                          onChange={(e) => setEditState(e.target.value)}
+                          placeholder="UT"
+                          maxLength="2"
+                        />
+                      </div>
+                      <div className="edit-field edit-field-small">
+                        <label>ZIP Code</label>
+                        <input
+                          type="text"
+                          value={editZipCode}
+                          onChange={(e) => setEditZipCode(e.target.value)}
+                          placeholder="84101"
+                          maxLength="10"
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="edit-actions">
                     <button 
@@ -271,7 +319,12 @@ function Account({ user }) {
                   <p><strong>Name:</strong> {profile?.full_name || user?.user_metadata?.full_name || 'Not set'}</p>
                   <p><strong>Email:</strong> {profile?.email || user?.email}</p>
                   <p><strong>Phone:</strong> {profile?.phone || 'Not set'}</p>
-                  <p><strong>Address:</strong> {profile?.address || 'Not set'}</p>
+                  <p><strong>Address:</strong> {profile?.street_address ? (
+                    <span>
+                      {profile.street_address}<br />
+                      {profile.city}, {profile.state} {profile.zip_code}
+                    </span>
+                  ) : 'Not set'}</p>
                   <button onClick={startEditing} className="btn btn-secondary edit-btn">
                     Edit Profile
                   </button>
@@ -451,6 +504,22 @@ function Account({ user }) {
         .edit-field small {
           color: var(--color-text-light);
           font-size: 0.8rem;
+        }
+        
+        .address-fields {
+          background: var(--color-cream);
+          padding: 1rem;
+          border-radius: var(--radius-md);
+        }
+        
+        .address-row-edit {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          gap: 0.75rem;
+        }
+        
+        .edit-field-small input {
+          max-width: 100px;
         }
         
         .disabled-input {

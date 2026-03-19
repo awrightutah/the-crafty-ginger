@@ -10,7 +10,10 @@ CREATE TABLE profiles (
   email TEXT UNIQUE NOT NULL,
   full_name TEXT,
   phone TEXT,
-  address TEXT,
+  street_address TEXT,
+  city TEXT,
+  state TEXT,
+  zip_code TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -50,6 +53,10 @@ CREATE TABLE orders (
   customer_name TEXT,
   customer_email TEXT,
   customer_phone TEXT,
+  street_address TEXT,
+  city TEXT,
+  state TEXT,
+  zip_code TEXT,
   sms_consent BOOLEAN DEFAULT FALSE,
   sms_consent_text TEXT,
   sms_consent_at TIMESTAMPTZ,

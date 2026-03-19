@@ -11,6 +11,10 @@ function Checkout({ user }) {
   const [formData, setFormData] = useState({
     venmo_username: '',
     phone: '',
+    street_address: '',
+    city: '',
+    state: '',
+    zip_code: '',
     sms_consent: false,
     notes: ''
   });
@@ -74,6 +78,10 @@ function Checkout({ user }) {
           notes: formData.notes,
           venmo_username: formData.venmo_username,
           customer_phone: formData.phone,
+          street_address: formData.street_address,
+          city: formData.city,
+          state: formData.state,
+          zip_code: formData.zip_code,
           sms_consent: formData.sms_consent,
           sms_consent_text: 'I consent to receive text message updates about my order at the phone number provided. Message and data rates may apply. Reply STOP to cancel.',
           sms_consent_at: formData.sms_consent ? new Date().toISOString() : null,
@@ -140,6 +148,62 @@ function Checkout({ user }) {
                   required
                 />
                 <p className="form-hint">Used for order updates and delivery notifications</p>
+              </div>
+
+              <div className="address-section">
+                <h3 className="section-title">Shipping Address</h3>
+                
+                <div className="form-group">
+                  <label className="form-label">Street Address *</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="123 Main Street"
+                    value={formData.street_address}
+                    onChange={(e) => setFormData({ ...formData, street_address: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="address-row">
+                  <div className="form-group">
+                    <label className="form-label">City *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="Salt Lake City"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                      required
+                    />
+                  </div>
+
+                  <div className="form-group form-group-small">
+                    <label className="form-label">State *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="UT"
+                      value={formData.state}
+                      onChange={(e) => setFormData({ ...formData, state: e.target.value })}
+                      required
+                      maxLength="2"
+                    />
+                  </div>
+
+                  <div className="form-group form-group-small">
+                    <label className="form-label">ZIP Code *</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="84101"
+                      value={formData.zip_code}
+                      onChange={(e) => setFormData({ ...formData, zip_code: e.target.value })}
+                      required
+                      maxLength="10"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div className="form-group consent-group">
@@ -367,6 +431,30 @@ function Checkout({ user }) {
           font-size: 0.9rem;
           color: var(--color-text);
           line-height: 1.5;
+        }
+        
+        .address-section {
+          background: var(--color-cream);
+          padding: 1.5rem;
+          border-radius: var(--radius-md);
+          margin-bottom: 1rem;
+        }
+        
+        .section-title {
+          color: var(--color-primary);
+          font-size: 1rem;
+          margin-top: 0;
+          margin-bottom: 1rem;
+        }
+        
+        .address-row {
+          display: grid;
+          grid-template-columns: 2fr 1fr 1fr;
+          gap: 1rem;
+        }
+        
+        .form-group-small {
+          max-width: 120px;
         }
         
         @media (max-width: 768px) {
