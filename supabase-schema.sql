@@ -158,9 +158,44 @@ INSERT INTO products (name, description, price, category, image_url, is_custom) 
 ('Custom Resin Tray', 'Personalized resin tray made to your specifications. Choose your colors and style!', 50.00, 'Custom Orders', 'https://thecraftyginger.com/wp-content/uploads/2025/11/img_0116.jpeg', true),
 ('Custom Ornament', 'Handcrafted resin ornament with your choice of colors, inclusions, and theme.', 25.00, 'Custom Orders', 'https://thecraftyginger.com/wp-content/uploads/2026/01/edabe28f-ecf3-4445-a43f-519d2a2722f8_1_201_a-1.jpg', true);
 
+-- Instagram Reels table for embedded content
+CREATE TABLE instagram_reels (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  title TEXT NOT NULL,
+  embed_code TEXT NOT NULL,
+  instagram_url TEXT,
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS on instagram_reels
+ALTER TABLE instagram_reels ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for instagram_reels (public read, admin write)
+CREATE POLICY "Reels are viewable by everyone" ON instagram_reels
+  FOR SELECT USING (is_active = TRUE);
+
+CREATE POLICY "Admins can insert reels" ON instagram_reels
+  FOR INSERT WITH CHECK (
+    EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can update reels" ON instagram_reels
+  FOR UPDATE USING (
+    EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid())
+  );
+
+CREATE POLICY "Admins can delete reels" ON instagram_reels
+  FOR DELETE USING (
+    EXISTS (SELECT 1 FROM admin_users WHERE user_id = auth.uid())
+  );
+
 -- Create index for better performance
 CREATE INDEX idx_products_category ON products(category);
 CREATE INDEX idx_products_active ON products(is_active);
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_reels_sort_order ON instagram_reels(sort_order);

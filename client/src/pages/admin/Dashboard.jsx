@@ -133,6 +133,10 @@ function Dashboard({ user }) {
             <h3>💰 Cost Calculator</h3>
             <p>Calculate pricing for resin products</p>
           </Link>
+          <Link to="/admin/reels" className="action-card">
+            <h3>📸 Instagram Reels</h3>
+            <p>Manage embedded Instagram reels on your site</p>
+          </Link>
         </div>
       </div>
 

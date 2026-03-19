@@ -35,6 +35,7 @@ function Header({ user }) {
 
         <nav className={`nav ${mobileMenuOpen ? 'nav-open' : ''}`}>
           <Link to="/products" className="nav-link">Shop</Link>
+          <Link to="/gallery" className="nav-link">Gallery</Link>
           <Link to="/products?category=Custom%20Orders" className="nav-link">Custom Orders</Link>
           
           {user ? (

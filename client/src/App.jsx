@@ -16,6 +16,8 @@ import AdminProducts from './pages/admin/Products';
 import AdminOrders from './pages/admin/Orders';
 import Calculator from './pages/admin/Calculator';
 import NewOrder from './pages/admin/NewOrder';
+import Reels from './pages/admin/Reels';
+import Gallery from './pages/Gallery';
 import { CartProvider } from './context/CartContext';
 
 function App() {
@@ -65,6 +67,8 @@ function App() {
               <Route path="/admin/orders" element={<AdminOrders user={user} />} />
               <Route path="/admin/calculator" element={<Calculator user={user} />} />
               <Route path="/admin/orders/new" element={<NewOrder user={user} />} />
+              <Route path="/admin/reels" element={<Reels user={user} />} />
+              <Route path="/gallery" element={<Gallery />} />
             </Routes>
           </main>
           <Footer />
