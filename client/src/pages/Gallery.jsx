@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { getPlatformName } from '../lib/videoEmbed';
 
 function Gallery() {
   const [reels, setReels] = useState([]);
@@ -30,13 +31,13 @@ function Gallery() {
     <div className="gallery-page">
       <div className="container">
         <div className="gallery-header">
-          <h1>📸 Our Gallery</h1>
+          <h1>🎬 Our Gallery</h1>
           <p>See The Crafty Ginger in action! Watch our resin creations come to life.</p>
         </div>
 
         {loading ? (
           <div className="loading-state">
-            <p>Loading reels...</p>
+            <p>Loading videos...</p>
           </div>
         ) : reels.length === 0 ? (
           <div className="empty-state">
@@ -54,19 +55,26 @@ function Gallery() {
           <div className="reels-grid">
             {reels.map((reel) => (
               <div key={reel.id} className="reel-item">
-                <h3>{reel.title}</h3>
+                <div className="reel-header">
+                  <h3>{reel.title}</h3>
+                  {reel.video_url && (
+                    <span className="platform-badge">
+                      {getPlatformName(reel.video_url)}
+                    </span>
+                  )}
+                </div>
                 <div 
                   className="reel-embed"
                   dangerouslySetInnerHTML={{ __html: reel.embed_code }} 
                 />
-                {reel.instagram_url && (
+                {reel.video_url && (
                   <a 
-                    href={reel.instagram_url}
+                    href={reel.video_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="view-on-instagram"
+                    className="view-source-link"
                   >
-                    View on Instagram →
+                    View on {getPlatformName(reel.video_url)} →
                   </a>
                 )}
               </div>
@@ -121,10 +129,25 @@ function Gallery() {
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
         }
 
-        .reel-item h3 {
-          color: var(--color-primary);
-          margin-top: 0;
+        .reel-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           margin-bottom: 1rem;
+        }
+
+        .reel-header h3 {
+          color: var(--color-primary);
+          margin: 0;
+        }
+
+        .platform-badge {
+          background: var(--color-cream);
+          color: var(--color-primary);
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.75rem;
+          font-weight: 500;
         }
 
         .reel-embed {
@@ -133,18 +156,20 @@ function Gallery() {
           margin-bottom: 1rem;
         }
 
-        .reel-embed iframe {
+        .reel-embed iframe,
+        .reel-embed video {
           max-width: 100%;
+          border-radius: var(--radius-md);
         }
 
-        .view-on-instagram {
+        .view-source-link {
           display: inline-block;
           color: var(--color-primary);
           font-weight: 500;
           text-decoration: none;
         }
 
-        .view-on-instagram:hover {
+        .view-source-link:hover {
           text-decoration: underline;
         }
 

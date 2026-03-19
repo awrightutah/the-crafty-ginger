@@ -158,12 +158,12 @@ INSERT INTO products (name, description, price, category, image_url, is_custom) 
 ('Custom Resin Tray', 'Personalized resin tray made to your specifications. Choose your colors and style!', 50.00, 'Custom Orders', 'https://thecraftyginger.com/wp-content/uploads/2025/11/img_0116.jpeg', true),
 ('Custom Ornament', 'Handcrafted resin ornament with your choice of colors, inclusions, and theme.', 25.00, 'Custom Orders', 'https://thecraftyginger.com/wp-content/uploads/2026/01/edabe28f-ecf3-4445-a43f-519d2a2722f8_1_201_a-1.jpg', true);
 
--- Instagram Reels table for embedded content
+-- Video Gallery table for embedded content (supports multiple platforms)
 CREATE TABLE instagram_reels (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   title TEXT NOT NULL,
+  video_url TEXT,
   embed_code TEXT NOT NULL,
-  instagram_url TEXT,
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),

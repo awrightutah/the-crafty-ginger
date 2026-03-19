@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import { detectVideoPlatform, generateVideoEmbed, getPlatformName, isValidVideoUrl } from '../../lib/videoEmbed';
 
 function Reels({ user }) {
   const navigate = useNavigate();
@@ -11,11 +12,12 @@ function Reels({ user }) {
   const [editingReel, setEditingReel] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
+    video_url: '',
     embed_code: '',
-    instagram_url: '',
     sort_order: 0,
     is_active: true
   });
+  const [videoPreview, setVideoPreview] = useState('');
 
   useEffect(() => {
     checkAdmin();
@@ -69,8 +71,27 @@ function Reels({ user }) {
     }
   };
 
+  const handleVideoUrlChange = (url) => {
+    setFormData({ ...formData, video_url: url });
+    
+    if (url && isValidVideoUrl(url)) {
+      const embed = generateVideoEmbed(url);
+      if (embed) {
+        setVideoPreview(embed);
+        setFormData(prev => ({ ...prev, embed_code: embed }));
+      }
+    } else {
+      setVideoPreview('');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    let finalEmbedCode = formData.embed_code;
+    if (formData.video_url && !formData.embed_code) {
+      finalEmbedCode = generateVideoEmbed(formData.video_url);
+    }
     
     try {
       if (editingReel) {
@@ -78,8 +99,8 @@ function Reels({ user }) {
           .from('instagram_reels')
           .update({
             title: formData.title,
-            embed_code: formData.embed_code,
-            instagram_url: formData.instagram_url,
+            video_url: formData.video_url,
+            embed_code: finalEmbedCode,
             sort_order: formData.sort_order,
             is_active: formData.is_active,
             updated_at: new Date().toISOString()
@@ -90,7 +111,13 @@ function Reels({ user }) {
       } else {
         const { error } = await supabase
           .from('instagram_reels')
-          .insert([formData]);
+          .insert([{
+            title: formData.title,
+            video_url: formData.video_url,
+            embed_code: finalEmbedCode,
+            sort_order: formData.sort_order,
+            is_active: formData.is_active
+          }]);
 
         if (error) throw error;
       }
@@ -99,11 +126,12 @@ function Reels({ user }) {
       setEditingReel(null);
       setFormData({
         title: '',
+        video_url: '',
         embed_code: '',
-        instagram_url: '',
         sort_order: 0,
         is_active: true
       });
+      setVideoPreview('');
       fetchReels();
     } catch (error) {
       console.error('Error saving reel:', error);
@@ -115,11 +143,12 @@ function Reels({ user }) {
     setEditingReel(reel);
     setFormData({
       title: reel.title,
+      video_url: reel.video_url || '',
       embed_code: reel.embed_code,
-      instagram_url: reel.instagram_url || '',
       sort_order: reel.sort_order || 0,
       is_active: reel.is_active
     });
+    setVideoPreview(reel.embed_code);
     setShowForm(true);
   };
 
@@ -169,29 +198,40 @@ function Reels({ user }) {
     <div className="admin-reels">
       <div className="container">
         <div className="page-header">
-          <h1>📸 Instagram Reels Manager</h1>
+          <h1>🎬 Video Gallery Manager</h1>
           <button 
             className="btn btn-primary"
             onClick={() => {
               setEditingReel(null);
               setFormData({
                 title: '',
+                video_url: '',
                 embed_code: '',
-                instagram_url: '',
                 sort_order: reels.length,
                 is_active: true
               });
+              setVideoPreview('');
               setShowForm(true);
             }}
           >
-            + Add New Reel
+            + Add New Video
           </button>
+        </div>
+
+        <div className="supported-platforms">
+          <span>Supported: </span>
+          <span className="platform-tag">YouTube</span>
+          <span className="platform-tag">TikTok</span>
+          <span className="platform-tag">Instagram</span>
+          <span className="platform-tag">Vimeo</span>
+          <span className="platform-tag">MP4 Files</span>
+          <span className="platform-tag">Custom Embed</span>
         </div>
 
         {showForm && (
           <div className="form-overlay">
             <div className="form-modal">
-              <h2>{editingReel ? 'Edit Reel' : 'Add New Reel'}</h2>
+              <h2>{editingReel ? 'Edit Video' : 'Add New Video'}</h2>
               
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
@@ -207,31 +247,52 @@ function Reels({ user }) {
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Instagram URL</label>
+                  <label className="form-label">Video URL</label>
                   <input
                     type="url"
                     className="form-input"
-                    placeholder="https://www.instagram.com/reel/xxxxx"
-                    value={formData.instagram_url}
-                    onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
+                    placeholder="Paste YouTube, TikTok, Instagram, Vimeo, or MP4 link..."
+                    value={formData.video_url}
+                    onChange={(e) => handleVideoUrlChange(e.target.value)}
                   />
-                  <p className="form-hint">Link to the reel on Instagram (optional)</p>
+                  <p className="form-hint">
+                    {formData.video_url && detectVideoPlatform(formData.video_url) ? (
+                      <span className="platform-detected">
+                        ✓ Detected: {getPlatformName(formData.video_url)}
+                      </span>
+                    ) : formData.video_url ? (
+                      <span className="platform-unknown">
+                        ⚠ URL not recognized. Use Custom Embed Code below.
+                      </span>
+                    ) : (
+                      'Auto-embeds from YouTube, TikTok, Instagram, Vimeo, or direct MP4 links'
+                    )}
+                  </p>
                 </div>
 
                 <div className="form-group">
-                  <label className="form-label">Embed Code *</label>
+                  <label className="form-label">Custom Embed Code (Optional)</label>
                   <textarea
                     className="form-input form-textarea"
                     rows="4"
-                    placeholder='<blockquote class="instagram-media" ...></blockquote>'
+                    placeholder="Paste embed code from CapCut, InShot, or any other platform..."
                     value={formData.embed_code}
                     onChange={(e) => setFormData({ ...formData, embed_code: e.target.value })}
-                    required
                   />
                   <p className="form-hint">
-                    To get this: Open your Reel on Instagram → Click three dots (⋯) → Embed → Copy the code
+                    Use this for CapCut, InShot, or other platforms. Will override auto-generated embed.
                   </p>
                 </div>
+
+                {videoPreview && (
+                  <div className="form-group">
+                    <label className="form-label">Preview</label>
+                    <div 
+                      className="video-preview"
+                      dangerouslySetInnerHTML={{ __html: videoPreview }} 
+                    />
+                  </div>
+                )}
 
                 <div className="form-row">
                   <div className="form-group">
@@ -262,7 +323,7 @@ function Reels({ user }) {
                     Cancel
                   </button>
                   <button type="submit" className="btn btn-primary">
-                    {editingReel ? 'Update Reel' : 'Add Reel'}
+                    {editingReel ? 'Update Video' : 'Add Video'}
                   </button>
                 </div>
               </form>
@@ -271,10 +332,10 @@ function Reels({ user }) {
         )}
 
         {loading ? (
-          <p>Loading reels...</p>
+          <p>Loading videos...</p>
         ) : reels.length === 0 ? (
           <div className="empty-state">
-            <p>No reels added yet. Click "Add New Reel" to get started!</p>
+            <p>No videos added yet. Click "Add New Video" to get started!</p>
           </div>
         ) : (
           <div className="reels-grid">
@@ -286,6 +347,12 @@ function Reels({ user }) {
                     {reel.is_active ? 'Active' : 'Hidden'}
                   </span>
                 </div>
+                
+                {reel.video_url && (
+                  <p className="video-source">
+                    <strong>Source:</strong> {getPlatformName(reel.video_url)}
+                  </p>
+                )}
                 
                 <div className="reel-preview" dangerouslySetInnerHTML={{ __html: reel.embed_code }} />
                 
@@ -324,12 +391,29 @@ function Reels({ user }) {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 2rem;
+          margin-bottom: 1rem;
         }
 
         .page-header h1 {
           color: var(--color-primary);
           margin: 0;
+        }
+
+        .supported-platforms {
+          margin-bottom: 2rem;
+          display: flex;
+          flex-wrap: wrap;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .platform-tag {
+          background: var(--color-cream);
+          color: var(--color-primary);
+          padding: 0.25rem 0.75rem;
+          border-radius: 20px;
+          font-size: 0.8rem;
+          font-weight: 500;
         }
 
         .form-overlay {
@@ -350,7 +434,7 @@ function Reels({ user }) {
           background: white;
           padding: 2rem;
           border-radius: var(--radius-lg);
-          max-width: 600px;
+          max-width: 700px;
           width: 100%;
           max-height: 90vh;
           overflow-y: auto;
@@ -384,6 +468,27 @@ function Reels({ user }) {
           width: 18px;
           height: 18px;
           accent-color: var(--color-primary);
+        }
+
+        .platform-detected {
+          color: var(--color-success);
+          font-weight: 500;
+        }
+
+        .platform-unknown {
+          color: #dc3545;
+        }
+
+        .video-preview {
+          background: var(--color-cream);
+          border-radius: var(--radius-md);
+          padding: 1rem;
+          overflow: hidden;
+        }
+
+        .video-preview iframe,
+        .video-preview video {
+          max-width: 100%;
         }
 
         .form-actions {
@@ -423,12 +528,18 @@ function Reels({ user }) {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 1rem;
+          margin-bottom: 0.5rem;
         }
 
         .reel-header h3 {
           margin: 0;
           color: var(--color-primary);
+        }
+
+        .video-source {
+          font-size: 0.85rem;
+          color: var(--color-text-light);
+          margin-bottom: 1rem;
         }
 
         .status-badge {
@@ -457,6 +568,7 @@ function Reels({ user }) {
         }
 
         .reel-preview iframe,
+        .reel-preview video,
         .reel-preview blockquote {
           max-width: 100%;
         }
