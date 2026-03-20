@@ -93,17 +93,21 @@ function Reels({ user }) {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Validate file type
-    const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please upload a valid video file (MP4, WebM, OGG, or MOV)');
+    // Validate file type - now accepting all video types since Cloudflare will transcode
+    const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime', 'video/mov', 'video/x-msvideo', 'video/x-matroska'];
+    const fileExt = file.name.split('.').pop().toLowerCase();
+    
+    // Also check by extension for MOV files which might not have the right MIME type
+    const validExtensions = ['mp4', 'webm', 'ogg', 'mov', 'avi', 'mkv', 'm4v'];
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExt)) {
+      alert('Please upload a valid video file (MP4, WebM, OGG, MOV, AVI, MKV)');
       return;
     }
 
-    // Validate file size (max 50MB)
-    const maxSize = 50 * 1024 * 1024; // 50MB
+    // Validate file size (max 200MB for Cloudflare basic upload)
+    const maxSize = 200 * 1024 * 1024; // 200MB
     if (file.size > maxSize) {
-      alert('Video file is too large. Maximum size is 50MB.');
+      alert('Video file is too large. Maximum size is 200MB.');
       return;
     }
 
@@ -111,80 +115,66 @@ function Reels({ user }) {
     setUploadProgress(0);
 
     try {
-      // Create unique filename
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      // Upload directly to bucket root (no subfolder)
-      const filePath = fileName;
+      console.log('Getting upload URL from Cloudflare...');
 
-      console.log('Uploading video to Supabase Storage:', filePath);
+      // Get direct upload URL from our Edge Function
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://zwtpllgtzbotkdjyeiqi.supabase.co';
+      const uploadUrlResponse = await fetch(`${supabaseUrl}/functions/v1/cloudflare-upload`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          maxDurationSeconds: 3600 // 1 hour max
+        }),
+      });
 
-      // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
-        .from('videos')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        });
-
-      if (error) {
-        console.error('Upload error:', error);
-        throw error;
+      if (!uploadUrlResponse.ok) {
+        const errorData = await uploadUrlResponse.json();
+        console.error('Failed to get upload URL:', errorData);
+        throw new Error('Failed to get upload URL');
       }
 
-      console.log('Upload successful:', data);
+      const { uploadUrl, videoId } = await uploadUrlResponse.json();
+      console.log('Got upload URL:', uploadUrl, 'Video ID:', videoId);
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('videos')
-        .getPublicUrl(filePath);
+      setUploadProgress(25);
 
-      const publicUrl = urlData.publicUrl;
-      
-      console.log('Public URL:', publicUrl);
+      // Upload directly to Cloudflare Stream
+      const formData = new FormData();
+      formData.append('file', file);
 
-      // Determine the correct video MIME type based on extension
-      let videoType = file.type;
-      const ext = fileExt.toLowerCase();
-      if (ext === 'mov') {
-        videoType = 'video/quicktime';
-      } else if (ext === 'mp4') {
-        videoType = 'video/mp4';
-      } else if (ext === 'webm') {
-        videoType = 'video/webm';
-      } else if (ext === 'ogg' || ext === 'ogv') {
-        videoType = 'video/ogg';
+      console.log('Uploading video to Cloudflare Stream...');
+      const uploadResponse = await fetch(uploadUrl, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error('Upload failed:', errorText);
+        throw new Error('Upload failed');
       }
 
-      // Generate the embed code with proper attributes
-      // Note: MOV files may not play in all browsers - recommend MP4 for best compatibility
-      const embedCode = `<video controls playsinline preload="auto" style="width:100%;max-width:100%;border-radius:8px;background:#000;"><source src="${publicUrl}" type="${videoType}">Your browser does not support the video tag.</video>`;
+      setUploadProgress(75);
+      console.log('Upload complete!');
 
-      // Test if video URL is accessible
-      fetch(publicUrl, { method: 'HEAD', mode: 'no-cors' })
-        .then(response => {
-          console.log('Video URL fetch completed');
-        })
-        .catch(err => {
-          console.error('Video URL fetch error:', err);
-        });
-      
-      // Warn about MOV format
-      if (fileExt.toLowerCase() === 'mov') {
-        console.warn('MOV format detected - this may not play in all browsers. Consider converting to MP4 for best compatibility.');
-      }
+      // Cloudflare Stream video URL and embed
+      const streamUrl = `https://customer-${import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || ''}.cloudflarestream.com/${videoId}/iframe`;
+      const embedCode = `<stream src="${videoId}" controls></stream><script data-cfasync="false" defer type="text/javascript" src="https://embed.videodelivery.net/embed/r4xu9a2b5e.js"></script>`;
 
       // Update form data
       setFormData(prev => ({
         ...prev,
-        video_url: publicUrl,
+        video_url: `https://watch.cloudflarestream.com/${videoId}`,
         embed_code: embedCode
       }));
 
-      // Set preview
-      setVideoPreview(embedCode);
+      // Set preview using Cloudflare's iframe player
+      setVideoPreview(`<iframe src="https://customer-${import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || ''}.cloudflarestream.com/${videoId}/iframe" loading="lazy" style="border:none;width:100%;height:300px;background:black;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe>`);
 
       setUploadProgress(100);
+      alert('Video uploaded successfully! It may take a few minutes to process and become playable.');
     } catch (error) {
       console.error('Error uploading video:', error);
       alert('Error uploading video. Please try again.');
@@ -452,8 +442,8 @@ function Reels({ user }) {
                         <div className="upload-placeholder">
                           <span className="upload-icon">📹</span>
                           <p>Click to upload or drag and drop</p>
-                          <p className="upload-formats">MP4, WebM, OGG, MOV (max 50MB)</p>
-                          <p className="upload-warning">⚠️ MOV files from iPhones may not play in browsers. MP4 recommended for best compatibility.</p>
+                          <p className="upload-formats">MP4, MOV, WebM, AVI, MKV (max 200MB)</p>
+                          <p className="upload-info">✨ Videos are automatically optimized for web playback</p>
                         </div>
                       </div>
                     ) : (
@@ -691,6 +681,15 @@ function Reels({ user }) {
           font-size: 0.8rem;
           color: #856404;
           background: #fff3cd;
+          padding: 0.5rem;
+          border-radius: var(--radius-sm);
+          margin-top: 0.5rem;
+        }
+
+        .upload-info {
+          font-size: 0.8rem;
+          color: #0c5460;
+          background: #d1ecf1;
           padding: 0.5rem;
           border-radius: var(--radius-sm);
           margin-top: 0.5rem;

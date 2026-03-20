@@ -2,6 +2,19 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { getPlatformName, detectVideoPlatform } from '../lib/videoEmbed';
 
+// Helper to detect Cloudflare Stream URLs
+function isCloudflareStream(url) {
+  return url && url.includes('cloudflarestream.com');
+}
+
+// Helper to get Cloudflare Stream video ID
+function getCloudflareVideoId(url) {
+  if (!url) return null;
+  // Match patterns like https://watch.cloudflarestream.com/VIDEO_ID
+  const match = url.match(/cloudflarestream\.com\/([a-zA-Z0-9]+)/);
+  return match ? match[1] : null;
+}
+
 function Gallery() {
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -59,7 +72,7 @@ function Gallery() {
                   <h3>{reel.title}</h3>
                   {reel.video_url && (
                     <span className="platform-badge">
-                      {getPlatformName(reel.video_url)}
+                      {isCloudflareStream(reel.video_url) ? 'Stream' : getPlatformName(reel.video_url)}
                     </span>
                   )}
                 </div>
@@ -67,7 +80,7 @@ function Gallery() {
                   className="reel-embed"
                   dangerouslySetInnerHTML={{ __html: reel.embed_code }} 
                 />
-                {reel.video_url && detectVideoPlatform(reel.video_url) && detectVideoPlatform(reel.video_url) !== 'direct' && (
+                {reel.video_url && !isCloudflareStream(reel.video_url) && detectVideoPlatform(reel.video_url) && detectVideoPlatform(reel.video_url) !== 'direct' && (
                   <a 
                     href={reel.video_url}
                     target="_blank"
