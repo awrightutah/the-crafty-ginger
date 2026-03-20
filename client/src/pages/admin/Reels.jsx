@@ -160,8 +160,13 @@ function Reels({ user }) {
       console.log('Upload complete!');
 
       // Cloudflare Stream video URL and embed
-      const streamUrl = `https://customer-${import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || ''}.cloudflarestream.com/${videoId}/iframe`;
-      const embedCode = `<stream src="${videoId}" controls></stream><script data-cfasync="false" defer type="text/javascript" src="https://embed.videodelivery.net/embed/r4xu9a2b5e.js"></script>`;
+      // Use iframe player for better compatibility
+      const customerCode = import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || '';
+      const iframeSrc = customerCode 
+        ? `https://customer-${customerCode}.cloudflarestream.com/${videoId}/iframe?preload=true&muted=true&autoplay=false`
+        : `https://iframe.cloudflarestream.com/${videoId}?preload=true&muted=true&autoplay=false`;
+      
+      const embedCode = `<iframe src="${iframeSrc}" loading="lazy" style="border:none;width:100%;height:100%;background:black;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe>`;
 
       // Update form data
       setFormData(prev => ({
@@ -170,8 +175,8 @@ function Reels({ user }) {
         embed_code: embedCode
       }));
 
-      // Set preview using Cloudflare's iframe player
-      setVideoPreview(`<iframe src="https://customer-${import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || ''}.cloudflarestream.com/${videoId}/iframe" loading="lazy" style="border:none;width:100%;height:300px;background:black;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe>`);
+      // Set preview
+      setVideoPreview(embedCode);
 
       setUploadProgress(100);
       alert('Video uploaded successfully! It may take a few minutes to process and become playable.');
