@@ -157,16 +157,22 @@ function Reels({ user }) {
       }
 
       // Generate the embed code with proper attributes
-      const embedCode = `<video controls playsinline preload="auto" style="width:100%;max-width:100%;border-radius:8px;background:#000;" crossorigin="anonymous"><source src="${publicUrl}" type="${videoType}">Your browser does not support the video tag.</video>`;
+      // Note: MOV files may not play in all browsers - recommend MP4 for best compatibility
+      const embedCode = `<video controls playsinline preload="auto" style="width:100%;max-width:100%;border-radius:8px;background:#000;"><source src="${publicUrl}" type="${videoType}">Your browser does not support the video tag.</video>`;
 
       // Test if video URL is accessible
-      fetch(publicUrl, { method: 'HEAD' })
+      fetch(publicUrl, { method: 'HEAD', mode: 'no-cors' })
         .then(response => {
-          console.log('Video URL accessible:', response.ok, response.status);
+          console.log('Video URL fetch completed');
         })
         .catch(err => {
-          console.error('Video URL not accessible:', err);
+          console.error('Video URL fetch error:', err);
         });
+      
+      // Warn about MOV format
+      if (fileExt.toLowerCase() === 'mov') {
+        console.warn('MOV format detected - this may not play in all browsers. Consider converting to MP4 for best compatibility.');
+      }
 
       // Update form data
       setFormData(prev => ({
@@ -447,6 +453,7 @@ function Reels({ user }) {
                           <span className="upload-icon">📹</span>
                           <p>Click to upload or drag and drop</p>
                           <p className="upload-formats">MP4, WebM, OGG, MOV (max 50MB)</p>
+                          <p className="upload-warning">⚠️ MOV files from iPhones may not play in browsers. MP4 recommended for best compatibility.</p>
                         </div>
                       </div>
                     ) : (
@@ -678,6 +685,15 @@ function Reels({ user }) {
           font-size: 0.85rem;
           color: var(--color-text-light);
           margin-top: 0.25rem;
+        }
+
+        .upload-warning {
+          font-size: 0.8rem;
+          color: #856404;
+          background: #fff3cd;
+          padding: 0.5rem;
+          border-radius: var(--radius-sm);
+          margin-top: 0.5rem;
         }
 
         .uploaded-file {
