@@ -114,7 +114,10 @@ function Reels({ user }) {
       // Create unique filename
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-      const filePath = `videos/${fileName}`;
+      // Upload directly to bucket root (no subfolder)
+      const filePath = fileName;
+
+      console.log('Uploading video to Supabase Storage:', filePath);
 
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
@@ -124,7 +127,12 @@ function Reels({ user }) {
           upsert: false
         });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+
+      console.log('Upload successful:', data);
 
       // Get public URL
       const { data: urlData } = supabase.storage
@@ -133,7 +141,7 @@ function Reels({ user }) {
 
       const publicUrl = urlData.publicUrl;
       
-      console.log('Video uploaded successfully:', publicUrl);
+      console.log('Public URL:', publicUrl);
 
       // Determine the correct video MIME type based on extension
       let videoType = file.type;
@@ -149,7 +157,16 @@ function Reels({ user }) {
       }
 
       // Generate the embed code with proper attributes
-      const embedCode = `<video controls playsinline preload="metadata" style="width:100%;max-width:100%;border-radius:8px;background:#000;"><source src="${publicUrl}" type="${videoType}">Your browser does not support the video tag.</video>`;
+      const embedCode = `<video controls playsinline preload="auto" style="width:100%;max-width:100%;border-radius:8px;background:#000;" crossorigin="anonymous"><source src="${publicUrl}" type="${videoType}">Your browser does not support the video tag.</video>`;
+
+      // Test if video URL is accessible
+      fetch(publicUrl, { method: 'HEAD' })
+        .then(response => {
+          console.log('Video URL accessible:', response.ok, response.status);
+        })
+        .catch(err => {
+          console.error('Video URL not accessible:', err);
+        });
 
       // Update form data
       setFormData(prev => ({
