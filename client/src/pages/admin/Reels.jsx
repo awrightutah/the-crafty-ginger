@@ -132,16 +132,34 @@ function Reels({ user }) {
         .getPublicUrl(filePath);
 
       const publicUrl = urlData.publicUrl;
+      
+      console.log('Video uploaded successfully:', publicUrl);
+
+      // Determine the correct video MIME type based on extension
+      let videoType = file.type;
+      const ext = fileExt.toLowerCase();
+      if (ext === 'mov') {
+        videoType = 'video/quicktime';
+      } else if (ext === 'mp4') {
+        videoType = 'video/mp4';
+      } else if (ext === 'webm') {
+        videoType = 'video/webm';
+      } else if (ext === 'ogg' || ext === 'ogv') {
+        videoType = 'video/ogg';
+      }
+
+      // Generate the embed code with proper attributes
+      const embedCode = `<video controls playsinline preload="metadata" style="width:100%;max-width:100%;border-radius:8px;background:#000;"><source src="${publicUrl}" type="${videoType}">Your browser does not support the video tag.</video>`;
 
       // Update form data
       setFormData(prev => ({
         ...prev,
         video_url: publicUrl,
-        embed_code: `<video controls playsinline style="width:100%;max-width:100%;border-radius:8px;"><source src="${publicUrl}" type="${file.type}">Your browser does not support the video tag.</video>`
+        embed_code: embedCode
       }));
 
       // Set preview
-      setVideoPreview(`<video controls playsinline style="width:100%;max-width:100%;border-radius:8px;"><source src="${publicUrl}" type="${file.type}">Your browser does not support the video tag.</video>`);
+      setVideoPreview(embedCode);
 
       setUploadProgress(100);
     } catch (error) {
