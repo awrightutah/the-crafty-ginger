@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { getPlatformName } from '../lib/videoEmbed';
+import { getPlatformName, detectVideoPlatform } from '../lib/videoEmbed';
 
 function Gallery() {
   const [reels, setReels] = useState([]);
@@ -67,7 +67,7 @@ function Gallery() {
                   className="reel-embed"
                   dangerouslySetInnerHTML={{ __html: reel.embed_code }} 
                 />
-                {reel.video_url && (
+                {reel.video_url && detectVideoPlatform(reel.video_url) && detectVideoPlatform(reel.video_url) !== 'direct' && (
                   <a 
                     href={reel.video_url}
                     target="_blank"

@@ -1,15 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { detectVideoPlatform, generateVideoEmbed, getPlatformName, isValidVideoUrl } from '../../lib/videoEmbed';
 
 function Reels({ user }) {
   const navigate = useNavigate();
+  const fileInputRef = useRef(null);
   const [reels, setReels] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isAdminUser, setIsAdminUser] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingReel, setEditingReel] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [videoType, setVideoType] = useState('url'); // 'url' or 'upload'
   const [formData, setFormData] = useState({
     title: '',
     video_url: '',
@@ -82,6 +86,81 @@ function Reels({ user }) {
       }
     } else {
       setVideoPreview('');
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please upload a valid video file (MP4, WebM, OGG, or MOV)');
+      return;
+    }
+
+    // Validate file size (max 50MB)
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    if (file.size > maxSize) {
+      alert('Video file is too large. Maximum size is 50MB.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      // Create unique filename
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `videos/${fileName}`;
+
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('videos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (error) throw error;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        video_url: publicUrl,
+        embed_code: `<video controls playsinline style="width:100%;max-width:100%;border-radius:8px;"><source src="${publicUrl}" type="${file.type}">Your browser does not support the video tag.</video>`
+      }));
+
+      // Set preview
+      setVideoPreview(`<video controls playsinline style="width:100%;max-width:100%;border-radius:8px;"><source src="${publicUrl}" type="${file.type}">Your browser does not support the video tag.</video>`);
+
+      setUploadProgress(100);
+    } catch (error) {
+      console.error('Error uploading video:', error);
+      alert('Error uploading video. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeUploadedVideo = () => {
+    setFormData(prev => ({
+      ...prev,
+      video_url: '',
+      embed_code: ''
+    }));
+    setVideoPreview('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
@@ -226,6 +305,7 @@ function Reels({ user }) {
           <span className="platform-tag">Vimeo</span>
           <span className="platform-tag">MP4 Files</span>
           <span className="platform-tag">Custom Embed</span>
+          <span className="platform-tag upload-tag">📁 Device Upload</span>
         </div>
 
         {showForm && (
@@ -246,43 +326,118 @@ function Reels({ user }) {
                   />
                 </div>
 
+                {/* Video Type Selector */}
                 <div className="form-group">
-                  <label className="form-label">Video URL</label>
-                  <input
-                    type="url"
-                    className="form-input"
-                    placeholder="Paste YouTube, TikTok, Instagram, Vimeo, or MP4 link..."
-                    value={formData.video_url}
-                    onChange={(e) => handleVideoUrlChange(e.target.value)}
-                  />
-                  <p className="form-hint">
-                    {formData.video_url && detectVideoPlatform(formData.video_url) ? (
-                      <span className="platform-detected">
-                        ✓ Detected: {getPlatformName(formData.video_url)}
-                      </span>
-                    ) : formData.video_url ? (
-                      <span className="platform-unknown">
-                        ⚠ URL not recognized. Use Custom Embed Code below.
-                      </span>
-                    ) : (
-                      'Auto-embeds from YouTube, TikTok, Instagram, Vimeo, or direct MP4 links'
-                    )}
-                  </p>
+                  <label className="form-label">Add Video From</label>
+                  <div className="video-type-selector">
+                    <button
+                      type="button"
+                      className={`type-btn ${videoType === 'url' ? 'active' : ''}`}
+                      onClick={() => {
+                        setVideoType('url');
+                        removeUploadedVideo();
+                      }}
+                    >
+                      🔗 URL / Embed
+                    </button>
+                    <button
+                      type="button"
+                      className={`type-btn ${videoType === 'upload' ? 'active' : ''}`}
+                      onClick={() => setVideoType('upload')}
+                    >
+                      📁 Upload File
+                    </button>
+                  </div>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Custom Embed Code (Optional)</label>
-                  <textarea
-                    className="form-input form-textarea"
-                    rows="4"
-                    placeholder="Paste embed code from CapCut, InShot, or any other platform..."
-                    value={formData.embed_code}
-                    onChange={(e) => setFormData({ ...formData, embed_code: e.target.value })}
-                  />
-                  <p className="form-hint">
-                    Use this for CapCut, InShot, or other platforms. Will override auto-generated embed.
-                  </p>
-                </div>
+                {/* URL/Embed Option */}
+                {videoType === 'url' && (
+                  <>
+                    <div className="form-group">
+                      <label className="form-label">Video URL</label>
+                      <input
+                        type="url"
+                        className="form-input"
+                        placeholder="Paste YouTube, TikTok, Instagram, Vimeo, or MP4 link..."
+                        value={formData.video_url}
+                        onChange={(e) => handleVideoUrlChange(e.target.value)}
+                      />
+                      <p className="form-hint">
+                        {formData.video_url && detectVideoPlatform(formData.video_url) ? (
+                          <span className="platform-detected">
+                            ✓ Detected: {getPlatformName(formData.video_url)}
+                          </span>
+                        ) : formData.video_url ? (
+                          <span className="platform-unknown">
+                            ⚠ URL not recognized. Use Custom Embed Code below.
+                          </span>
+                        ) : (
+                          'Auto-embeds from YouTube, TikTok, Instagram, Vimeo, or direct MP4 links'
+                        )}
+                      </p>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Custom Embed Code (Optional)</label>
+                      <textarea
+                        className="form-input form-textarea"
+                        rows="4"
+                        placeholder="Paste embed code from CapCut, InShot, or any other platform..."
+                        value={formData.embed_code}
+                        onChange={(e) => setFormData({ ...formData, embed_code: e.target.value })}
+                      />
+                      <p className="form-hint">
+                        Use this for CapCut, InShot, or other platforms. Will override auto-generated embed.
+                      </p>
+                    </div>
+                  </>
+                )}
+
+                {/* Upload Option */}
+                {videoType === 'upload' && (
+                  <div className="form-group">
+                    <label className="form-label">Upload Video File</label>
+                    
+                    {!formData.video_url ? (
+                      <div className="upload-area">
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                          onChange={handleFileUpload}
+                          disabled={uploading}
+                          className="file-input"
+                        />
+                        <div className="upload-placeholder">
+                          <span className="upload-icon">📹</span>
+                          <p>Click to upload or drag and drop</p>
+                          <p className="upload-formats">MP4, WebM, OGG, MOV (max 50MB)</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="uploaded-file">
+                        <span className="file-icon">🎬</span>
+                        <span className="file-name">Video uploaded successfully!</span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-danger"
+                          onClick={removeUploadedVideo}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+
+                    {uploading && (
+                      <div className="upload-progress">
+                        <div className="progress-bar">
+                          <div className="progress-fill" style={{ width: `${uploadProgress}%` }}></div>
+                        </div>
+                        <span>Uploading... {uploadProgress}%</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {videoPreview && (
                   <div className="form-group">
@@ -414,6 +569,118 @@ function Reels({ user }) {
           border-radius: 20px;
           font-size: 0.8rem;
           font-weight: 500;
+        }
+
+        .upload-tag {
+          background: var(--color-primary);
+          color: white;
+        }
+
+        .video-type-selector {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .type-btn {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          border: 2px solid var(--color-cream-dark);
+          background: white;
+          border-radius: var(--radius-md);
+          cursor: pointer;
+          font-size: 0.95rem;
+          transition: all 0.2s ease;
+        }
+
+        .type-btn:hover {
+          border-color: var(--color-primary);
+        }
+
+        .type-btn.active {
+          border-color: var(--color-primary);
+          background: var(--color-cream);
+          color: var(--color-primary);
+          font-weight: 600;
+        }
+
+        .upload-area {
+          position: relative;
+          border: 2px dashed var(--color-cream-dark);
+          border-radius: var(--radius-md);
+          padding: 2rem;
+          text-align: center;
+          transition: all 0.2s ease;
+          background: var(--color-cream);
+        }
+
+        .upload-area:hover {
+          border-color: var(--color-primary);
+          background: white;
+        }
+
+        .upload-area .file-input {
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          cursor: pointer;
+        }
+
+        .upload-placeholder {
+          pointer-events: none;
+        }
+
+        .upload-icon {
+          font-size: 2.5rem;
+          display: block;
+          margin-bottom: 0.5rem;
+        }
+
+        .upload-formats {
+          font-size: 0.85rem;
+          color: var(--color-text-light);
+          margin-top: 0.25rem;
+        }
+
+        .uploaded-file {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          padding: 1rem;
+          background: #d4edda;
+          border-radius: var(--radius-md);
+          border: 1px solid #c3e6cb;
+        }
+
+        .file-icon {
+          font-size: 1.5rem;
+        }
+
+        .file-name {
+          flex: 1;
+          color: #155724;
+          font-weight: 500;
+        }
+
+        .upload-progress {
+          margin-top: 1rem;
+        }
+
+        .progress-bar {
+          height: 8px;
+          background: var(--color-cream-dark);
+          border-radius: 4px;
+          overflow: hidden;
+          margin-bottom: 0.5rem;
+        }
+
+        .progress-fill {
+          height: 100%;
+          background: var(--color-primary);
+          transition: width 0.3s ease;
         }
 
         .form-overlay {
