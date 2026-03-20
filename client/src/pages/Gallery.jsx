@@ -131,8 +131,10 @@ function Gallery() {
 
         .reels-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
           gap: 2rem;
+          max-width: 1200px;
+          margin: 0 auto;
         }
 
         .reel-item {
@@ -140,6 +142,13 @@ function Gallery() {
           border-radius: var(--radius-lg);
           padding: 1.5rem;
           box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+          display: flex;
+          flex-direction: column;
+        }
+
+        .reel-item .reel-embed {
+          flex: 1;
+          min-height: 400px;
         }
 
         .reel-header {
@@ -167,11 +176,19 @@ function Gallery() {
           border-radius: var(--radius-md);
           overflow: hidden;
           margin-bottom: 1rem;
+          position: relative;
+          width: 100%;
+          padding-bottom: 177.78%; /* 9:16 aspect ratio for vertical videos */
+          background: #000;
         }
 
         .reel-embed iframe,
         .reel-embed video {
-          max-width: 100%;
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
           border-radius: var(--radius-md);
         }
 

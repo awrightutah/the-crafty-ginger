@@ -164,7 +164,7 @@ function Reels({ user }) {
       const customerCode = import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || 'x5kf3b6a9wj5ci1j';
       const iframeSrc = `https://customer-${customerCode}.cloudflarestream.com/${videoId}/iframe`;
       
-      const embedCode = `<iframe src="${iframeSrc}" loading="lazy" style="border:none;position:absolute;top:0;left:0;height:100%;width:100%;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe>`;
+      const embedCode = `<div style="position:relative;width:100%;padding-bottom:177.78%;height:0;background:#000;"><iframe src="${iframeSrc}" loading="lazy" style="border:none;position:absolute;top:0;left:0;height:100%;width:100%;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe></div>`;
 
       // Update form data
       setFormData(prev => ({
