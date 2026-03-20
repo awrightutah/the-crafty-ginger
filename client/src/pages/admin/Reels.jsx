@@ -161,12 +161,10 @@ function Reels({ user }) {
 
       // Cloudflare Stream video URL and embed
       // Use iframe player for better compatibility
-      const customerCode = import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || '';
-      const iframeSrc = customerCode 
-        ? `https://customer-${customerCode}.cloudflarestream.com/${videoId}/iframe?preload=true&muted=true&autoplay=false`
-        : `https://iframe.cloudflarestream.com/${videoId}?preload=true&muted=true&autoplay=false`;
+      const customerCode = import.meta.env.VITE_CLOUDFLARE_CUSTOMER_CODE || 'x5kf3b6a9wj5ci1j';
+      const iframeSrc = `https://customer-${customerCode}.cloudflarestream.com/${videoId}/iframe`;
       
-      const embedCode = `<iframe src="${iframeSrc}" loading="lazy" style="border:none;width:100%;height:100%;background:black;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe>`;
+      const embedCode = `<iframe src="${iframeSrc}" loading="lazy" style="border:none;position:absolute;top:0;left:0;height:100%;width:100%;" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowfullscreen="true"></iframe>`;
 
       // Update form data
       setFormData(prev => ({

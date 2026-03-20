@@ -30,16 +30,9 @@ Deno.serve(async (req: Request) => {
     const CLOUDFLARE_ACCOUNT_ID = Deno.env.get('CLOUDFLARE_ACCOUNT_ID');
     const CLOUDFLARE_API_TOKEN = Deno.env.get('CLOUDFLARE_API_TOKEN');
 
-    // Debug: Check if credentials exist
     if (!CLOUDFLARE_ACCOUNT_ID || !CLOUDFLARE_API_TOKEN) {
       return new Response(
-        JSON.stringify({ 
-          error: 'Cloudflare credentials not configured',
-          debug: {
-            hasAccountId: !!CLOUDFLARE_ACCOUNT_ID,
-            hasApiToken: !!CLOUDFLARE_API_TOKEN
-          }
-        }),
+        JSON.stringify({ error: 'Cloudflare credentials not configured' }),
         { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       );
     }
@@ -70,11 +63,7 @@ Deno.serve(async (req: Request) => {
       const errorData = await response.json();
       console.error('Cloudflare API error:', errorData);
       return new Response(
-        JSON.stringify({ 
-          error: 'Failed to generate upload URL', 
-          cloudflareError: errorData,
-          accountId: CLOUDFLARE_ACCOUNT_ID.substring(0, 8) + '...'
-        }),
+        JSON.stringify({ error: 'Failed to generate upload URL' }),
         { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
       );
     }
@@ -97,7 +86,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error('Error generating upload URL:', error);
     return new Response(
-      JSON.stringify({ error: 'Internal server error', details: error.message }),
+      JSON.stringify({ error: 'Internal server error' }),
       { status: 500, headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' } }
     );
   }
